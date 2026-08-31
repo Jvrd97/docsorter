@@ -169,6 +169,8 @@ export const api = {
     request<{
       mode: string;
       answer: string | null;
+  /** Умный поиск не сработал и откатился на поиск по словам — почему. */
+  note?: string | null;
       plan: { restated?: string } | null;
       documents: DocumentCard[];
     }>("/api/search", { method: "POST", body: JSON.stringify({ q, mode }) }),

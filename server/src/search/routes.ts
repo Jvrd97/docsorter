@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { query } from "../db.js";
-import { ask, extractJson, aiEnabled } from "../ai/index.js";
+import { ask, extractJson, aiEnabled, AiUnavailable } from "../ai/index.js";
 import { embed, embeddingsEnabled, toVectorLiteral } from "../pipeline/embeddings.js";
 import { requireVault, clientIp, audit } from "../auth/session.js";
 import { CATEGORIES } from "../pipeline/taxonomy.js";
@@ -39,7 +39,28 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
 
       // Умный режим: модель превращает фразу в план, база достаёт кандидатов,
       // модель переранжирует их и отвечает словами со ссылками на документы.
-      const plan = await makePlan(q);
+      //
+      // Модель может не ответить: очередь разбора занимает её целиком, упёрлись
+      // в лимит, отвалился CLI. Это не повод отдавать 500 и оставлять человека
+      // ни с чем — откатываемся на поиск по словам и говорим, что произошло.
+      let plan: Plan;
+      try {
+        plan = await makePlan(q);
+      } catch (err) {
+        request.log.error({ err, q }, "умный поиск: не удалось построить план");
+        const hits = await searchFts(userId, q, { includeArchived }, limit);
+        await audit(userId, clientIp(request), "search", { q, mode: "fallback", found: hits.length });
+        return {
+          mode: "fast",
+          answer: null,
+          plan: null,
+          note:
+            err instanceof AiUnavailable
+              ? "Разбор моделью выключен — ищу по словам."
+              : "Модель сейчас не отвечает (скорее всего занята разбором очереди). Ищу по словам.",
+          documents: hits.slice(0, limit),
+        };
+      }
       const filters: SearchFilters = { ...plan, includeArchived };
 
       const lists: Hit[][] = [];

@@ -162,6 +162,8 @@ a { color: var(--accent); text-decoration: none; }
 }
 .notice.answer { border-color: var(--accent); background: var(--accent-soft); }
 .notice.error { border-color: var(--danger); color: var(--danger); }
+/* Предупреждение, а не отказ: результаты есть, просто получены попроще. */
+.notice.warn { border-color: var(--warn, #b98900); color: var(--warn, #b98900); }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
 .empty .big { font-size: 40px; margin-bottom: 10px; }

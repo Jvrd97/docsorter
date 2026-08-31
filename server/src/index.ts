@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyError, type FastifyReply, type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
@@ -21,6 +21,20 @@ const app = Fastify({
   logger: { level: env.NODE_ENV === "production" ? "info" : "debug" },
   bodyLimit: 2 * 1024 * 1024,
   trustProxy: true,
+});
+
+// Без этого Fastify отдаёт голое "Internal Server Error", и причина видна
+// только в логе контейнера. Текст ошибки наружу не выносим — он может
+// содержать данные из базы, — но код и подсказку, где смотреть, даём.
+app.setErrorHandler((err: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+  request.log.error({ err, url: request.url }, "необработанная ошибка");
+  const status = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
+  reply.code(status).send({
+    error:
+      status < 500
+        ? err.message
+        : "Что-то сломалось на сервере. Причина записана в лог: docker compose logs app",
+  });
 });
 
 await app.register(helmet, {

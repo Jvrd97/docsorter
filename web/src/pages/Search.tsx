@@ -17,6 +17,7 @@ export function SearchPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [restated, setRestated] = useState<string | null>(null);
   const [results, setResults] = useState<DocumentCard[] | null>(null);
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.stats>> | null>(null);
@@ -32,11 +33,13 @@ export function SearchPage() {
     setBusy(true);
     setError(null);
     setAnswer(null);
+    setNote(null);
     inputRef.current?.blur();
     try {
       const response = await api.search(query, mode);
       setResults(response.documents);
       setAnswer(response.answer);
+      setNote(response.note ?? null);
       setRestated(response.plan?.restated ?? null);
     } catch (err) {
       setError(errorText(err));
@@ -81,6 +84,7 @@ export function SearchPage() {
           </div>
         )}
         {error && <div className="notice error">{error}</div>}
+        {note && <div className="notice warn">{note}</div>}
         {answer && <div className="notice answer">{answer}</div>}
         {restated && !answer && results && results.length > 0 && (
           <p className="meta" style={{ marginBottom: 10 }}>Понял как: {restated}</p>
