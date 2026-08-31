@@ -12,6 +12,8 @@ import { ensureStorage } from "./storage/index.js";
 import { authRoutes } from "./auth/routes.js";
 import { documentRoutes } from "./docs/routes.js";
 import { searchRoutes } from "./search/routes.js";
+import { settingsRoutes } from "./settings/routes.js";
+import { migrate } from "./migrations.js";
 import { startWorker } from "./pipeline/worker.js";
 import { shutdownOcr } from "./pipeline/ocr.js";
 
@@ -59,6 +61,7 @@ app.get("/api/health", async () => ({ ok: true, ai: env.AI_PROVIDER, model: env.
 await app.register(authRoutes);
 await app.register(documentRoutes);
 await app.register(searchRoutes);
+await app.register(settingsRoutes);
 
 // Фронтенд отдаётся тем же процессом: один контейнер, один порт, один сертификат.
 if (existsSync(env.WEB_DIR)) {
@@ -73,6 +76,7 @@ if (existsSync(env.WEB_DIR)) {
 }
 
 await waitForDb();
+await migrate();
 await ensureStorage();
 
 // Мусор от прошлого запуска: задания, застрявшие в running, вернуть в очередь.

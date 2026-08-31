@@ -1,4 +1,4 @@
-import { env } from "../env.js";
+import { runtime } from "../settings/store.js";
 
 /**
  * У Claude нет своего эндпойнта эмбеддингов, поэтому векторный поиск —
@@ -6,19 +6,22 @@ import { env } from "../env.js";
  * полнотекстовый поиск + переранжирование моделью, чего для личного
  * архива в тысячи документов достаточно.
  */
-export const embeddingsEnabled = env.EMBEDDINGS_PROVIDER !== "none";
+export function embeddingsEnabled(): boolean {
+  return runtime().embeddingsProvider !== "none";
+}
 
 export async function embed(text: string): Promise<number[] | null> {
-  if (env.EMBEDDINGS_PROVIDER !== "voyage" || !env.VOYAGE_API_KEY) return null;
+  const config = runtime();
+  if (config.embeddingsProvider !== "voyage" || !config.voyageKey) return null;
 
   const response = await fetch("https://api.voyageai.com/v1/embeddings", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${env.VOYAGE_API_KEY}`,
+      authorization: `Bearer ${config.voyageKey}`,
     },
     body: JSON.stringify({
-      model: env.VOYAGE_MODEL,
+      model: config.voyageModel,
       input: [text.slice(0, 30_000)],
       input_type: "document",
       output_dimension: 1024,

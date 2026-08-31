@@ -31,7 +31,7 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
       const userId = request.userId!;
 
       // Быстрый режим: только полнотекстовый поиск, без единого вызова модели.
-      if (mode === "fast" || !aiEnabled) {
+      if (mode === "fast" || !aiEnabled()) {
         const hits = await searchFts(userId, q, { includeArchived }, limit);
         await audit(userId, clientIp(request), "search", { q, mode: "fast", found: hits.length });
         return { mode: "fast", answer: null, plan: null, documents: hits.slice(0, limit) };
@@ -46,7 +46,7 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
       const text = plan.keywords.join(" ") || q;
       lists.push(await searchFts(userId, text, filters, 40));
       if (lists[0]!.length < 5) lists.push(await searchFilters(userId, filters, 30));
-      if (embeddingsEnabled) {
+      if (embeddingsEnabled()) {
         const vector = await embed(q).catch(() => null);
         if (vector) lists.push(await searchVector(userId, toVectorLiteral(vector), filters, 30));
       }

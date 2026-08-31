@@ -28,13 +28,19 @@ cd app
 cp .env.example .env
 ```
 
-Заполнить три строки в `.env`:
+Заполнить две строки в `.env`:
 
 ```bash
 openssl rand -base64 32   # → POSTGRES_PASSWORD
 openssl rand -hex 48      # → SESSION_SECRET
-claude setup-token        # → CLAUDE_CODE_OAUTH_TOKEN
 ```
+
+Ключи моделей в `.env` не обязательны: они вводятся в самом приложении,
+**Настройки → Разбор и ключи**, и хранятся в базе зашифрованными тем же ключом,
+что и документы. Кнопка «Проверить» делает настоящий короткий запрос к модели и
+показывает, отвечает она или нет. Перезапуск контейнера после смены ключа не
+нужен. Значения из `.env` остаются запасными — они работают, пока в интерфейсе
+ничего не задано.
 
 Поднять:
 
@@ -65,13 +71,50 @@ docker compose exec app node dist/scripts/setup-totp.js
 docker compose --profile public up -d --build
 ```
 
-Безопаснее не открывать порт в интернет вообще, а зайти в частную сеть
-(Tailscale, WireGuard). Тогда профиль `public` не нужен: приложение слушает
-`127.0.0.1:8433`, и достаточно проброса внутри своей сети. HTTPS для PWA всё
-равно понадобится — Tailscale выдаёт сертификат командой `tailscale cert`.
-
 Ограничить доступ по адресам можно прямо в `Caddyfile` — там заготовлен
 закомментированный блок `@notmine`.
+
+## На сервере, через Tailscale (рекомендуется)
+
+Порт в интернет не открывается вообще. Приложение видно только с твоих
+устройств, HTTPS-сертификат Tailscale выдаёт сам — этого достаточно, чтобы
+поставить PWA на айфон. Caddy не нужен, профиль `public` не запускается.
+
+Один раз в админке тайлнета: **Settings → DNS → HTTPS Certificates → Enable**.
+Без этого `tailscale serve` откажется работать.
+
+На сервере:
+
+```bash
+docker compose up -d --build
+sudo tailscale serve --bg 8433
+```
+
+`serve` слушает HTTPS на имени узла и проксирует на `127.0.0.1:8433`. Проверить,
+что получилось, и на что это смотрит:
+
+```bash
+tailscale serve status
+```
+
+Дальше на айфоне: приложение Tailscale включено → Safari → `https://<имя
+узла>.<суффикс>.ts.net` → «Поделиться» → «На экран «Домой»».
+
+Свои имена посмотреть можно так:
+
+```bash
+tailscale status --json | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['Self']['DNSName'].rstrip('.'))"
+```
+
+Выключить раздачу:
+
+```bash
+sudo tailscale serve --https=443 off
+```
+
+Побочный эффект, о котором стоит знать: без Tailscale на телефоне приложение до
+сервера не достучится. Оболочка откроется из кэша, снятые фото лягут в очередь и
+уедут, когда VPN снова поднимется.
 
 ### Поставить на айфон
 
@@ -133,7 +176,15 @@ node app/tools/import-vault.mjs \
 
 ## Настройки
 
-Всё в `.env`, полный список с пояснениями — в `.env.example`.
+Ключи и выбор модели — в приложении, **Настройки → Разбор и ключи**. Остальное в
+`.env`, полный список с пояснениями — в `.env.example`.
+
+| Правится в интерфейсе | Только в `.env` |
+|---|---|
+| `AI_PROVIDER`, `AI_MODEL` | `APP_PORT`, `DOMAIN` |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `POSTGRES_PASSWORD`, `SESSION_SECRET` |
+| `ANTHROPIC_API_KEY` | `WORKER_CONCURRENCY`, `MAX_UPLOAD_MB` |
+| `EMBEDDINGS_PROVIDER`, `VOYAGE_API_KEY` | `REQUIRE_TOTP`, `SESSION_TTL_HOURS` |
 
 | Ключ | Смысл |
 |---|---|

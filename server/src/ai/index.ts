@@ -1,4 +1,4 @@
-import { env } from "../env.js";
+import { runtime } from "../settings/store.js";
 import { askCli } from "./cli.js";
 import { askApi } from "./api.js";
 
@@ -16,8 +16,9 @@ export interface AiRequest {
 export class AiUnavailable extends Error {}
 
 export async function ask(req: AiRequest): Promise<string> {
-  if (env.AI_PROVIDER === "off") throw new AiUnavailable("AI_PROVIDER=off");
-  return env.AI_PROVIDER === "api" ? askApi(req) : askCli(req);
+  const provider = runtime().aiProvider;
+  if (provider === "off") throw new AiUnavailable("разбор моделью выключен в настройках");
+  return provider === "api" ? askApi(req) : askCli(req);
 }
 
 /** Вытаскивает первый сбалансированный JSON-объект из ответа модели. */
@@ -55,4 +56,6 @@ export async function askJson<T>(req: AiRequest): Promise<T | null> {
   return extractJson<T>(await ask(req));
 }
 
-export const aiEnabled = env.AI_PROVIDER !== "off";
+export function aiEnabled(): boolean {
+  return runtime().aiProvider !== "off";
+}

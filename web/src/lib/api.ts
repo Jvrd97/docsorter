@@ -45,6 +45,34 @@ export interface Entity {
   value: string;
 }
 
+export interface Settings {
+  values: {
+    AI_PROVIDER: "cli" | "api" | "off";
+    AI_MODEL: string;
+    EMBEDDINGS_PROVIDER: "none" | "voyage";
+    VOYAGE_MODEL: string;
+  };
+  /** Хвост секрета или null. Полное значение сервер не отдаёт никогда. */
+  secrets: Record<"CLAUDE_CODE_OAUTH_TOKEN" | "ANTHROPIC_API_KEY" | "VOYAGE_API_KEY", string | null>;
+  models: Array<{ id: string; label: string }>;
+  envDefaults: {
+    AI_PROVIDER: string;
+    AI_MODEL: string;
+    EMBEDDINGS_PROVIDER: string;
+    hasEnvClaudeToken: boolean;
+    hasEnvAnthropicKey: boolean;
+  };
+}
+
+export interface AiTestResult {
+  ok: boolean;
+  provider?: string;
+  model?: string;
+  ms?: number;
+  answer?: string;
+  error?: string;
+}
+
 export interface Facets {
   categories: Array<{ value: string; count: number }>;
   senders: Array<{ value: string; count: number }>;
@@ -146,6 +174,16 @@ export const api = {
     }>("/api/search", { method: "POST", body: JSON.stringify({ q, mode }) }),
 
   facets: () => request<Facets>("/api/facets"),
+
+  settings: () => request<Settings>("/api/settings"),
+
+  saveSettings: (values: Record<string, string | null>) =>
+    request<{ ok: true; changed: string[] }>("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ values }),
+    }),
+
+  testAi: () => request<AiTestResult>("/api/settings/test", { method: "POST" }),
 
   stats: () =>
     request<{

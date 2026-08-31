@@ -172,3 +172,16 @@ CREATE TABLE saved_searches (
   query      jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ─────────────────────────── настройки из интерфейса ─────────────────────────
+-- Ключи API и выбор модели редактируются в приложении, а не в .env.
+-- Значения зашифрованы тем же DEK, что и файлы: прочитать их можно только
+-- при открытом хранилище.
+
+CREATE TABLE app_settings (
+  user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  key        text NOT NULL,
+  value_enc  bytea NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, key)
+);

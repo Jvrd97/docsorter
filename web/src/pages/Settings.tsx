@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, formatBytes } from "../lib/api.ts";
 import { errorText } from "../App.tsx";
+import { AiSettings } from "../components/AiSettings.tsx";
 
 export function SettingsPage({ login, onLogout }: { login: string; onLogout: () => void }) {
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.stats>> | null>(null);
@@ -62,6 +63,9 @@ export function SettingsPage({ login, onLogout }: { login: string; onLogout: () 
             «Домой»». Тогда откроется без адресной строки и запомнит вход.
           </div>
         )}
+
+        <div className="section-title">Разбор и ключи</div>
+        <AiSettings />
 
         <div className="section-title">Сменить пароль</div>
         <div className="card">

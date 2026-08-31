@@ -1,10 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { env } from "../env.js";
+import { runtime } from "../settings/store.js";
 import type { AiRequest } from "./index.js";
 
 let client: Anthropic | null = null;
+let clientKey: string | undefined;
+
+// Ключ меняется прямо в интерфейсе, поэтому клиента пересоздаём при смене.
 function getClient(): Anthropic {
-  if (!client) client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  const apiKey = runtime().anthropicKey;
+  if (!client || clientKey !== apiKey) {
+    client = new Anthropic({ apiKey });
+    clientKey = apiKey;
+  }
   return client;
 }
 
@@ -33,7 +40,7 @@ export async function askApi(req: AiRequest): Promise<string> {
   content.push({ type: "text", text: req.prompt });
 
   const response = await getClient().messages.create({
-    model: env.AI_MODEL,
+    model: runtime().aiModel,
     max_tokens: req.maxTokens ?? 8000,
     ...(req.system ? { system: req.system } : {}),
     messages: [{ role: "user", content }],

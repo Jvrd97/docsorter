@@ -9,6 +9,7 @@ import {
 import {
   createSession, destroySession, requireAuth, clientIp, audit,
 } from "./session.js";
+import { refreshRuntime, resetRuntime } from "../settings/store.js";
 
 const credentials = z.object({
   login: z.string().min(1).max(200),
@@ -94,6 +95,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
 
       unlock(user.id, dek);
+      // Ключи и выбор модели лежат зашифрованными — читаем их сразу после входа.
+      await refreshRuntime(user.id, dek);
       await query("UPDATE users SET failed_count=0, locked_until=NULL WHERE id=$1", [user.id]);
       await createSession(user.id, request, reply);
       await audit(user.id, ip, "login_ok");
@@ -117,7 +120,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         await audit(user.id, clientIp(request), "unlock_fail");
         return reply.code(401).send({ error: "неверный пароль" });
       }
-      unlock(user.id, await unwrapDek(body.data.password, user.kdf_salt, user.wrapped_dek));
+      const dek = await unwrapDek(body.data.password, user.kdf_salt, user.wrapped_dek);
+      unlock(user.id, dek);
+      await refreshRuntime(user.id, dek);
       await audit(user.id, clientIp(request), "unlock");
       return { vaultUnlocked: true };
     },
@@ -125,6 +130,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.post("/api/auth/logout", { preHandler: requireAuth }, async (request, reply) => {
     lock(request.userId!);
+    resetRuntime();
     await destroySession(request, reply);
     await audit(request.userId!, clientIp(request), "logout");
     return { ok: true };

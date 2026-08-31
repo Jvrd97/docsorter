@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ask, extractJson, AiUnavailable } from "../ai/index.js";
-import { env } from "../env.js";
+import { runtime } from "../settings/store.js";
 import { CATEGORIES, FALLBACK_CATEGORY, KNOWN_SENDERS, ENTITY_KINDS } from "./taxonomy.js";
 import { makeTempDir, safeUnlink, extFor } from "./media.js";
 import { ocrFallback } from "./ocr.js";
@@ -83,7 +83,7 @@ export async function analyzeDocument(
     if (!parsed?.category) throw new Error("модель не вернула разбор");
     return { analysis: sanitize(parsed), source: "ai" };
   } catch (err) {
-    if (env.AI_PROVIDER === "off" || err instanceof AiUnavailable || isAiFailure(err)) {
+    if (runtime().aiProvider === "off" || err instanceof AiUnavailable || isAiFailure(err)) {
       const text = await ocrFallback(fileBuffer, mime);
       return { analysis: fromOcrOnly(text), source: "ocr" };
     }

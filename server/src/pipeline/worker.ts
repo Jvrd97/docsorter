@@ -162,7 +162,7 @@ async function runAnalyze(job: Job, dek: Buffer, log: FastifyBaseLogger): Promis
 
   await saveEntities(job.payload.documentId, analysis.entities);
   await enqueue("link", job.payload);
-  if (embeddingsEnabled) await enqueue("embed", job.payload);
+  if (embeddingsEnabled()) await enqueue("embed", job.payload);
 }
 
 async function runEmbed(job: Job): Promise<void> {

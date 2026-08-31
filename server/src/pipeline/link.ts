@@ -27,7 +27,7 @@ interface Candidate {
  */
 export async function buildLinks(documentId: string, userId: string): Promise<number> {
   let created = await linkByEntities(documentId, userId);
-  if (aiEnabled) created += await linkByModel(documentId, userId);
+  if (aiEnabled()) created += await linkByModel(documentId, userId);
   return created;
 }
 
