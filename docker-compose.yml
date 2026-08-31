@@ -49,9 +49,11 @@ services:
     volumes:
       - ./data/blobs:/data/blobs
       - ./data/tessdata:/data/tessdata
-    # Порт слушает только localhost: наружу выпускает Caddy.
+    # По умолчанию слушает только localhost — наружу выпускает Caddy или
+    # tailscale serve. BIND_ADDR меняют, только если нужен прямой доступ
+    # по адресу машины (например 100.x из Tailscale) и HTTPS не важен.
     ports:
-      - "127.0.0.1:${APP_PORT:-8433}:${APP_PORT:-8433}"
+      - "${BIND_ADDR:-127.0.0.1}:${APP_PORT:-8433}:${APP_PORT:-8433}"
 
   caddy:
     image: caddy:2-alpine

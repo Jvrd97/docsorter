@@ -1,9 +1,12 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 COMPOSE := docker compose
-PORT := $$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2 || echo 8433)
+PORT := $(shell sed -n 's/^[[:space:]]*APP_PORT[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' .env 2>/dev/null | head -1)
+ifeq ($(strip $(PORT)),)
+PORT := 8433
+endif
 
-.PHONY: help deploy up down restart rebuild logs ps health user totp backup import clean
+.PHONY: help deploy up down restart rebuild logs ps health user totp backup import clean serve unserve
 
 help: ## Показать список команд
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -51,6 +54,17 @@ health: ## Дождаться готовности и показать стат�
 	done; \
 	echo "не поднялось за 2 минуты. Смотри: make logs"; \
 	$(COMPOSE) ps; exit 1
+
+serve: ## Открыть по HTTPS внутри своей сети Tailscale
+	@command -v tailscale >/dev/null || { echo "tailscale не установлен"; exit 1; }
+	@sudo tailscale serve --bg $(PORT)
+	@echo
+	@tailscale serve status
+	@echo "Адрес: https://$$(tailscale status --json | sed -n 's/.*\"DNSName\":\"\([^\"]*\)\.\".*/\1/p' | head -1)"
+
+unserve: ## Закрыть раздачу через Tailscale
+	@sudo tailscale serve --https=443 off
+	@echo "раздача выключена"
 
 logs: ## Живой лог приложения
 	@$(COMPOSE) logs -f --tail=100 app
