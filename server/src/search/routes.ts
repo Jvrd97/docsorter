@@ -54,10 +54,13 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
           mode: "fast",
           answer: null,
           plan: null,
+          // Показываем настоящую причину, а не догадку: текст приходит от
+          // самого CLI («не залогинен», «кончился лимит», «нет такой модели»)
+          // и данных пользователя не содержит.
           note:
             err instanceof AiUnavailable
               ? "Разбор моделью выключен — ищу по словам."
-              : "Модель сейчас не отвечает (скорее всего занята разбором очереди). Ищу по словам.",
+              : `Модель не ответила: ${reason(err)}. Ищу по словам.`,
           documents: hits.slice(0, limit),
         };
       }
@@ -198,4 +201,10 @@ function pickCategory(value: unknown): string | null {
 
 function isDate(value: unknown): boolean {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+/** Короткая причина отказа модели для показа человеку. */
+function reason(err: unknown): string {
+  const text = err instanceof Error ? err.message : String(err);
+  return text.replace(/\s+/g, " ").trim().slice(0, 200) || "причина неизвестна";
 }
