@@ -210,6 +210,26 @@ node app/tools/import-vault.mjs \
 
 ## Обслуживание
 
+Обычные действия завёрнуты в `make` — `make` без аргументов покажет список:
+
+| Команда | Что делает |
+|---|---|
+| `make deploy` | забрать с GitHub, пересобрать, поднять, дождаться готовности |
+| `make logs` | живой лог приложения |
+| `make restart` | перезапустить приложение |
+| `make user` / `make totp` | завести пользователя / включить второй фактор |
+| `make backup` | база и файлы в `./backups` |
+| `make import FROM=~/путь LOGIN=имя` | перенести старый архив |
+| `make clean` | снести контейнеры и все данные (спросит подтверждение) |
+
+Обновление на сервере — одна команда:
+
+```bash
+make deploy
+```
+
+Вручную, если make недоступен:
+
 ```bash
 docker compose logs -f app            # что происходит
 docker compose exec db psql -U docsorter docsorter   # залезть в базу
