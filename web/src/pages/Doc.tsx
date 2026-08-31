@@ -31,6 +31,7 @@ export function DocPage() {
   const [links, setLinks] = useState<DocLink[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [full, setFull] = useState(false);
   const [showText, setShowText] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -45,6 +46,19 @@ export function DocPage() {
       setError(errorText(err));
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFull(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [full]);
 
   useEffect(() => {
     void load();
@@ -96,9 +110,19 @@ export function DocPage() {
           </div>
         )}
 
-        <div className="preview" style={{ marginBottom: 14 }}>
+        <div className={full ? "preview full" : "preview"} style={{ marginBottom: 14 }}>
+          <button
+            className="preview-toggle"
+            onClick={() => setFull(!full)}
+            title={full ? "Свернуть (Esc)" : "Во весь экран"}
+          >
+            {full ? "✕ Свернуть" : "⛶ Во весь экран"}
+          </button>
           {doc.mime === "application/pdf" ? (
-            <iframe src={`/api/documents/${doc.id}/file`} title="документ" />
+            // FitH — вписать по ширине: страница видна целиком, длинный документ
+            // листается вниз. Иначе встроенный просмотрщик выбирает масштаб сам
+            // и показывает случайный кусок листа.
+            <iframe src={`/api/documents/${doc.id}/file#view=FitH`} title="документ" />
           ) : (
             <img src={`/api/documents/${doc.id}/file`} alt={doc.title ?? ""} />
           )}

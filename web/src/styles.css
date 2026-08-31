@@ -177,11 +177,33 @@ a { color: var(--accent); text-decoration: none; }
 .progress > i { display: block; height: 100%; background: var(--accent); transition: width 0.2s; }
 
 .preview {
+  position: relative;
   width: 100%; border-radius: var(--radius); border: 1px solid var(--line);
   background: var(--surface); overflow: hidden;
 }
 .preview img { width: 100%; display: block; }
-.preview embed, .preview iframe { width: 100%; height: 62vh; border: 0; display: block; }
+.preview embed, .preview iframe { width: 100%; height: 78vh; border: 0; display: block; }
+
+/* Во весь экран: документ читают целиком, а не в окошке на треть страницы. */
+.preview.full {
+  position: fixed; inset: 0; z-index: 50;
+  width: 100vw; height: 100dvh;
+  border: 0; border-radius: 0; background: var(--bg);
+  overflow: auto;
+}
+.preview.full embed, .preview.full iframe { height: 100dvh; }
+.preview.full img { width: auto; max-width: 100%; margin: 0 auto; }
+
+/* Кнопка поверх документа: в обычном режиме разворачивает, в полном — закрывает. */
+.preview-toggle {
+  position: absolute; top: 10px; right: 10px; z-index: 51;
+  padding: 7px 12px; font-size: 13px; line-height: 1;
+  border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text);
+  cursor: pointer; opacity: 0.92;
+}
+.preview-toggle:hover { opacity: 1; }
+.preview.full .preview-toggle { position: fixed; top: max(12px, env(safe-area-inset-top)); }
 
 .kv { display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 6px 12px; font-size: 14px; }
 .kv dt { color: var(--muted); }
