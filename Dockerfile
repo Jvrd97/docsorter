@@ -44,6 +44,6 @@ COPY --from=web    /build/dist ./web
 RUN useradd -m -u 10001 app && mkdir -p /data && chown -R app:app /app /data /home/app
 USER app
 
-EXPOSE 8080
+EXPOSE 8433
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "dist/index.js"]

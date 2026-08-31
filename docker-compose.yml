@@ -45,12 +45,13 @@ services:
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-40}
       NODE_ENV: production
+      PORT: ${APP_PORT:-8433}
     volumes:
       - ./data/blobs:/data/blobs
       - ./data/tessdata:/data/tessdata
     # Порт слушает только localhost: наружу выпускает Caddy.
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${APP_PORT:-8433}:${APP_PORT:-8433}"
 
   caddy:
     image: caddy:2-alpine
@@ -60,6 +61,7 @@ services:
       - app
     environment:
       DOMAIN: ${DOMAIN:-localhost}
+      APP_PORT: ${APP_PORT:-8433}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/caddy:/data

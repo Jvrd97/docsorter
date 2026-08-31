@@ -81,7 +81,7 @@ async function readHint(filePath) {
 }
 
 async function main() {
-  const base = (arg("url", "http://localhost:8080")).replace(/\/$/, "");
+  const base = (arg("url", "http://localhost:8433")).replace(/\/$/, "");
   const login = arg("login") ?? (await askLine("Логин: "));
   const from = arg("from") ?? (await askLine("Папка с документами: "));
   const analyze = !has("no-analyze");

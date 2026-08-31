@@ -3,7 +3,7 @@ import { zbool } from "./zbool.js";
 
 const schema = z.object({
   NODE_ENV: z.string().default("production"),
-  PORT: z.coerce.number().default(8080),
+  PORT: z.coerce.number().default(8433),
   HOST: z.string().default("0.0.0.0"),
 
   DATABASE_URL: z.string(),

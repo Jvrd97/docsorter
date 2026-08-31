@@ -16,7 +16,7 @@
 	# @notmine not remote_ip 192.168.0.0/16 100.64.0.0/10
 	# respond @notmine 403
 
-	reverse_proxy 127.0.0.1:8080 {
+	reverse_proxy 127.0.0.1:{$APP_PORT} {
 		header_up X-Forwarded-For {remote_host}
 	}
 }

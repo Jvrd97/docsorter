@@ -54,7 +54,7 @@ docker compose exec app node dist/scripts/create-user.js
 docker compose exec app node dist/scripts/setup-totp.js
 ```
 
-Открыть `http://localhost:8080`.
+Открыть `http://localhost:8433`.
 
 ## На сервере, наружу
 
@@ -67,7 +67,7 @@ docker compose --profile public up -d --build
 
 Безопаснее не открывать порт в интернет вообще, а зайти в частную сеть
 (Tailscale, WireGuard). Тогда профиль `public` не нужен: приложение слушает
-`127.0.0.1:8080`, и достаточно проброса внутри своей сети. HTTPS для PWA всё
+`127.0.0.1:8433`, и достаточно проброса внутри своей сети. HTTPS для PWA всё
 равно понадобится — Tailscale выдаёт сертификат командой `tailscale cert`.
 
 Ограничить доступ по адресам можно прямо в `Caddyfile` — там заготовлен
