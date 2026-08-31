@@ -52,9 +52,12 @@ services:
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-40}
       NODE_ENV: production
       PORT: ${APP_PORT:-8433}
+    # Именованные тома, а не папки хоста: Docker сам ставит владельца по образу.
+    # Bind-mount на Linux создаётся от root, и контейнер под непривилегированным
+    # пользователем не смог бы туда писать (EACCES при первой же загрузке).
     volumes:
-      - ./data/blobs:/data/blobs
-      - ./data/tessdata:/data/tessdata
+      - blobs:/data/blobs
+      - tessdata:/data/tessdata
     # По умолчанию слушает только localhost — наружу выпускает Caddy или
     # tailscale serve. BIND_ADDR меняют, только если нужен прямой доступ
     # по адресу машины (например 100.x из Tailscale) и HTTPS не важен.
@@ -75,3 +78,7 @@ services:
       - ./data/caddy:/data
       - ./data/caddy-config:/config
     profiles: ["public"]
+
+volumes:
+  blobs:
+  tessdata:

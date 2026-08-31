@@ -248,8 +248,16 @@ docker compose exec db psql -U docsorter docsorter   # залезть в баз�
 Бэкап — две вещи, обе обязательны:
 
 ```bash
+make backup
+```
+
+Кладёт в `./backups` два файла: дамп базы и архив зашифрованных документов.
+Файлы лежат на именованном томе Docker, а не в папке проекта, поэтому читаются
+изнутри контейнера:
+
+```bash
 docker compose exec -T db pg_dump -U docsorter docsorter | gzip > dump.sql.gz
-tar czf blobs.tar.gz app/data/blobs
+docker compose exec -T app tar czf - -C /data blobs > blobs.tar.gz
 ```
 
 Блобы без базы бесполезны (в базе `blob_key` и метаданные), база без блобов —

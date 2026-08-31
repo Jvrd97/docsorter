@@ -41,7 +41,13 @@ RUN npm install --omit=dev --no-audit --no-fund \
 COPY --from=server /build/dist ./dist
 COPY --from=web    /build/dist ./web
 
-RUN useradd -m -u 10001 app && mkdir -p /data && chown -R app:app /app /data /home/app
+# Каталоги данных создаются в образе и отдаются пользователю app: именованный
+# том при первом подключении наследует владельца отсюда. Без этого Docker на
+# Linux создал бы точку монтирования от root, и приложение не смогло бы писать.
+RUN useradd -m -u 10001 app \
+ && mkdir -p /data/blobs /data/tessdata \
+ && chown -R app:app /app /data /home/app \
+ && chmod 700 /data/blobs
 USER app
 
 EXPOSE 8433

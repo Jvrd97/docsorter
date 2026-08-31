@@ -98,7 +98,7 @@ backup: ## Бэкап базы и файлов в ./backups
 	@mkdir -p backups
 	@stamp=$$(date +%Y-%m-%d-%H%M); \
 	$(COMPOSE) exec -T db pg_dump -U docsorter docsorter | gzip > "backups/db-$$stamp.sql.gz"; \
-	tar czf "backups/blobs-$$stamp.tar.gz" -C data blobs 2>/dev/null || true; \
+	$(COMPOSE) exec -T app tar czf - -C /data blobs > "backups/blobs-$$stamp.tar.gz"; \
 	echo "готово:"; ls -lh backups/*$$stamp*
 	@echo "Пароль храни отдельно: без него blobs не расшифровать."
 
