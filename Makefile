@@ -1,16 +1,19 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 COMPOSE := docker compose
+
 PORT := $(shell sed -n 's/^[[:space:]]*APP_PORT[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' .env 2>/dev/null | head -1)
 ifeq ($(strip $(PORT)),)
 PORT := 8433
 endif
 
-.PHONY: help deploy up down restart rebuild logs ps health user totp backup import clean serve unserve
+.PHONY: help deploy up down restart rebuild logs ps health serve unserve user totp backup import clean
 
 help: ## Показать список команд
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | \
 		awk -F':.*?## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
+	@echo
+	@echo "  порт: $(PORT)"
 
 check-env:
 	@test -f .env || { \
@@ -43,24 +46,37 @@ rebuild: check-env ## Пересобрать образ с нуля, без кэ
 	@$(COMPOSE) up -d
 	@$(MAKE) --no-print-directory health
 
-health: ## Дождаться готовности и показать статус
+health: ## Дождаться готовности; если не встало — показать лог
 	@echo "── жду приложение на порту $(PORT) ──"
-	@for i in $$(seq 1 60); do \
-		if curl -fsS -m 2 "http://localhost:$(PORT)/api/health" >/dev/null 2>&1; then \
-			echo "готово: $$(curl -fsS "http://localhost:$(PORT)/api/health")"; \
-			echo "открывай: http://localhost:$(PORT)"; \
+	@probe() { \
+		if command -v curl >/dev/null 2>&1; then \
+			curl -fsS -m 3 "http://127.0.0.1:$(PORT)/api/health" 2>/dev/null; \
+		elif command -v wget >/dev/null 2>&1; then \
+			wget -qO- -T 3 "http://127.0.0.1:$(PORT)/api/health" 2>/dev/null; \
+		else \
+			$(COMPOSE) exec -T app node -e 'fetch("http://127.0.0.1:"+process.env.PORT+"/api/health").then(r=>r.text()).then(t=>process.stdout.write(t)).catch(()=>process.exit(1))' 2>/dev/null; \
+		fi; }; \
+	for i in $$(seq 1 45); do \
+		out=$$(probe || true); \
+		if [ -n "$$out" ]; then \
+			echo "готово: $$out"; \
+			echo "локально:    http://127.0.0.1:$(PORT)"; \
+			addr=$$(tailscale serve status 2>/dev/null | grep -m1 '^https://'); \
+			[ -n "$$addr" ] && echo "по Tailscale: $$addr"; \
 			exit 0; \
-		fi; sleep 2; \
+		fi; \
+		sleep 2; \
 	done; \
-	echo "не поднялось за 2 минуты. Смотри: make logs"; \
-	$(COMPOSE) ps; exit 1
+	echo; echo "не поднялось за 90 секунд. Что происходит:"; echo; \
+	$(COMPOSE) ps; echo; \
+	$(COMPOSE) logs --tail=40 app; \
+	exit 1
 
 serve: ## Открыть по HTTPS внутри своей сети Tailscale
 	@command -v tailscale >/dev/null || { echo "tailscale не установлен"; exit 1; }
 	@sudo tailscale serve --bg $(PORT)
 	@echo
-	@tailscale serve status
-	@echo "Адрес: https://$$(tailscale status --json | sed -n 's/.*\"DNSName\":\"\([^\"]*\)\.\".*/\1/p' | head -1)"
+	@echo "Адрес: $$(tailscale serve status 2>/dev/null | grep -m1 '^https://' || echo '— смотри вывод выше')"
 
 unserve: ## Закрыть раздачу через Tailscale
 	@sudo tailscale serve --https=443 off
@@ -89,7 +105,7 @@ backup: ## Бэкап базы и файлов в ./backups
 import: ## Перенести старый архив: make import FROM=~/путь LOGIN=имя
 	@test -n "$(FROM)" || { echo "укажи FROM=~/Documents/MyVault/Life/Dokumente"; exit 1; }
 	@test -n "$(LOGIN)" || { echo "укажи LOGIN=свой-логин"; exit 1; }
-	@node tools/import-vault.mjs --url "http://localhost:$(PORT)" --login "$(LOGIN)" --from "$(FROM)"
+	@node tools/import-vault.mjs --url "http://127.0.0.1:$(PORT)" --login "$(LOGIN)" --from "$(FROM)"
 
 clean: ## Снести контейнеры И ВСЕ ДАННЫЕ
 	@echo "Это удалит базу и все загруженные документы."
