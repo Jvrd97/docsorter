@@ -31,7 +31,7 @@ cp .env.example .env
 Заполнить две строки в `.env`:
 
 ```bash
-openssl rand -base64 32   # → POSTGRES_PASSWORD
+openssl rand -hex 32      # → POSTGRES_PASSWORD
 openssl rand -hex 48      # → SESSION_SECRET
 ```
 

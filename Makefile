@@ -19,7 +19,7 @@ check-env:
 	@test -f .env || { \
 		echo "Нет .env. Сделай: cp .env.example .env"; \
 		echo "и впиши два секрета:"; \
-		echo "  openssl rand -base64 32   # POSTGRES_PASSWORD"; \
+		echo "  openssl rand -hex 32      # POSTGRES_PASSWORD"; \
 		echo "  openssl rand -hex 48      # SESSION_SECRET"; \
 		exit 1; }
 

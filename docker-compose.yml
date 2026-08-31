@@ -29,7 +29,13 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://docsorter:${POSTGRES_PASSWORD}@db:5432/docsorter
+      # Отдельными полями, а не строкой URL: пароль со слэшем или плюсом
+      # (обычное дело для `openssl rand -base64`) сломал бы разбор адреса.
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: docsorter
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: docsorter
       STORAGE_DIR: /data/blobs
       TESSDATA_DIR: /data/tessdata
       WEB_DIR: /app/web

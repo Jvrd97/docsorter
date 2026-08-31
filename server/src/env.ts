@@ -6,7 +6,15 @@ const schema = z.object({
   PORT: z.coerce.number().default(8433),
   HOST: z.string().default("0.0.0.0"),
 
-  DATABASE_URL: z.string(),
+  // Подключение к базе задаётся ОТДЕЛЬНЫМИ переменными, а не одной строкой URL:
+  // пароль из `openssl rand -base64 32` содержит / + =, и склеенный URL
+  // перестаёт быть валидным. DATABASE_URL оставлен для совместимости.
+  DATABASE_URL: z.string().optional(),
+  PGHOST: z.string().default("db"),
+  PGPORT: z.coerce.number().default(5432),
+  PGUSER: z.string().default("docsorter"),
+  PGPASSWORD: z.string().optional(),
+  PGDATABASE: z.string().default("docsorter"),
 
   /** Куда класть зашифрованные файлы (том, примонтированный в контейнер). */
   STORAGE_DIR: z.string().default("/data/blobs"),
