@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/doccard.tsx","./src/lib/api.ts","./src/lib/image.ts","./src/lib/queue.ts","./src/pages/browse.tsx","./src/pages/doc.tsx","./src/pages/login.tsx","./src/pages/search.tsx","./src/pages/settings.tsx","./src/pages/upload.tsx"],"version":"5.9.3"}

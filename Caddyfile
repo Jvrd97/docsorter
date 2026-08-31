@@ -1,0 +1,22 @@
+# Публичный вход. Сертификат Let's Encrypt Caddy получает и продлевает сам.
+# Запуск:  docker compose --profile public up -d
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Файлы документов не должны оседать ни в каком кэше по дороге.
+	header /api/* Cache-Control "private, no-store"
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# Пускать только со своих адресов — раскомментируй и впиши свои сети.
+	# @notmine not remote_ip 192.168.0.0/16 100.64.0.0/10
+	# respond @notmine 403
+
+	reverse_proxy 127.0.0.1:8080 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}

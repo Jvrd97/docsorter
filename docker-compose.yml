@@ -1,0 +1,67 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docsorter
+      POSTGRES_USER: docsorter
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?нужен POSTGRES_PASSWORD в .env}
+      # Словари русского и немецкого для полнотекстового поиска идут в самом
+      # Postgres и от локали ОС не зависят — берём переносимую C.UTF-8.
+      LANG: C.UTF-8
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docsorter -d docsorter"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Наружу порт не выставляем: база доступна только приложению.
+    expose:
+      - "5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://docsorter:${POSTGRES_PASSWORD}@db:5432/docsorter
+      STORAGE_DIR: /data/blobs
+      TESSDATA_DIR: /data/tessdata
+      WEB_DIR: /app/web
+      SESSION_SECRET: ${SESSION_SECRET:?нужен SESSION_SECRET в .env}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-336}
+      REQUIRE_TOTP: ${REQUIRE_TOTP:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-cli}
+      AI_MODEL: ${AI_MODEL:-claude-haiku-4-5}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      EMBEDDINGS_PROVIDER: ${EMBEDDINGS_PROVIDER:-none}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-40}
+      NODE_ENV: production
+    volumes:
+      - ./data/blobs:/data/blobs
+      - ./data/tessdata:/data/tessdata
+    # Порт слушает только localhost: наружу выпускает Caddy.
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - app
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
+      - ./data/caddy-config:/config
+    profiles: ["public"]
